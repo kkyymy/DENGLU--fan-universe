@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>张极｜成员详情</title>
+  <style>
+    /* ======== 基础重置 ======== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: #050509;
+      color: #f8f7ff;
+      font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ======== 主题色（每个成员页只改这里就能换风格） ======== */
+    :root {
+      --theme-color: #ff9b3d;        /* 张极：温暖橘 */
+      --theme-color-2: #ffcc70;      /* 副色：浅橘黄 */
+      --theme-glow: rgba(255, 155, 61, 0.55);
+      --theme-glow-soft: rgba(255, 155, 61, 0.2);
+    }
+
+    /* ======== 背景层 ======== */
+    .bg-stars {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 28%, rgba(255,255,255,0.22) 0, transparent 24%),
+        radial-gradient(circle at 78% 18%, var(--theme-glow-soft) 0, transparent 26%),
+        radial-gradient(circle at 50% 82%, rgba(255,220,180,0.12) 0, transparent 30%),
+        linear-gradient(135deg, #050509 0%, #160a04 52%, #3a1d0a 100%);
+      z-index: -3;
+    }
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.06) 49%, transparent 51%);
+      background-size: 180px 180px;
+      opacity: 0.3;
+      z-index: -2;
+      pointer-events: none;
+    }
+    .bg-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--theme-glow) 0%, transparent 65%);
+      filter: blur(90px);
+      left: 50%;
+      top: 30%;
+      transform: translateX(-50%);
+      z-index: -1;
+      pointer-events: none;
+      animation: glowPulse 6s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.7; transform: translateX(-50%) scale(1.15); }
+    }
+
+    /* 流星 */
+    .meteor {
+      position: fixed;
+      width: 180px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #ffffff, var(--theme-color));
+      border-radius: 999px;
+      filter: drop-shadow(0 0 10px var(--theme-glow));
+      opacity: 0;
+      animation: meteorMove 5s linear infinite;
+      z-index: -1;
+    }
+    .meteor:nth-child(1) { top: 18%; left: 80%; animation-delay: 0s; }
+    .meteor:nth-child(2) { top: 38%; left: 90%; animation-delay: 2s; }
+    .meteor:nth-child(3) { top: 60%; left: 70%; animation-delay: 3.5s; }
+    @keyframes meteorMove {
+      0% { transform: translate(0, 0) rotate(-35deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translate(-900px, 520px) rotate(-35deg); opacity: 0; }
+    }
+
+    /* ======== 自定义光标：小橘子（橘色光球 + 橘瓣） ======== */
+    /* 主光球 */
+    .orange-cursor {
+      position: fixed;
+      left: 0; top: 0;
+      width: 32px;
+      height: 32px;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      transition: width 0.25s ease, height 0.25s ease;
+    }
+    /* 内核：发光的橘色球 */
+    .orange-cursor::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--theme-color-2) 25%, var(--theme-color) 60%, #d96b1a 100%);
+      box-shadow:
+        0 0 16px var(--theme-glow),
+        0 0 32px var(--theme-glow-soft),
+        inset -4px -4px 8px rgba(180, 80, 0, 0.4);
+      animation: orangePulse 2s ease-in-out infinite;
+    }
+    /* 顶部小高光：让橘色球有立体感 */
+    .orange-cursor::after {
+      content: "";
+      position: absolute;
+      left: 30%;
+      top: 18%;
+      width: 30%;
+      height: 25%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.85), transparent 70%);
+      filter: blur(1px);
+    }
+    @keyframes orangePulse {
+      0%, 100% { box-shadow: 0 0 16px var(--theme-glow), 0 0 32px var(--theme-glow-soft), inset -4px -4px 8px rgba(180, 80, 0, 0.4); }
+      50% { box-shadow: 0 0 24px var(--theme-color), 0 0 44px var(--theme-glow), inset -4px -4px 8px rgba(180, 80, 0, 0.4); }
+    }
+    /* hover 时光球膨胀 + 周围长出 4 片橘瓣 */
+    .orange-cursor.hovering {
+      width: 50px;
+      height: 50px;
+    }
+    .orange-petal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 14px;
+      height: 22px;
+      background: linear-gradient(to top, var(--theme-color), var(--theme-color-2));
+      border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+      transform-origin: 50% 100%;
+      opacity: 0;
+      filter: drop-shadow(0 0 6px var(--theme-glow));
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .orange-cursor.hovering .orange-petal {
+      opacity: 0.9;
+    }
+    .orange-petal:nth-child(3) { transform: translate(-50%, -100%) rotate(0deg) translateY(-6px); }
+    .orange-petal:nth-child(4) { transform: translate(-50%, -100%) rotate(90deg) translateY(-6px); }
+    .orange-petal:nth-child(5) { transform: translate(-50%, -100%) rotate(180deg) translateY(-6px); }
+    .orange-petal:nth-child(6) { transform: translate(-50%, -100%) rotate(270deg) translateY(-6px); }
+    .orange-cursor.hovering .orange-petal:nth-child(3) { transform: translate(-50%, -100%) rotate(0deg) translateY(-14px); }
+    .orange-cursor.hovering .orange-petal:nth-child(4) { transform: translate(-50%, -100%) rotate(90deg) translateY(-14px); }
+    .orange-cursor.hovering .orange-petal:nth-child(5) { transform: translate(-50%, -100%) rotate(180deg) translateY(-14px); }
+    .orange-cursor.hovering .orange-petal:nth-child(6) { transform: translate(-50%, -100%) rotate(270deg) translateY(-14px); }
+
+    /* 拖尾：橘瓣 / 橘色气泡 */
+    .orange-trail {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      animation: trailFade 1.3s ease-out forwards;
+      will-change: transform, opacity;
+    }
+    .orange-trail.bubble {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--theme-color-2), var(--theme-color));
+      box-shadow: 0 0 8px var(--theme-color), 0 0 14px var(--theme-glow);
+    }
+    .orange-trail.tiny-petal {
+      width: 7px;
+      height: 11px;
+      background: linear-gradient(to top, var(--theme-color), var(--theme-color-2));
+      border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+      filter: drop-shadow(0 0 4px var(--theme-glow));
+    }
+    @keyframes trailFade {
+      0% { opacity: 1; }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translate(var(--drift-x, 0), var(--drift-y, 30px)) rotate(var(--drift-r, 0deg)) scale(0.4);
+      }
+    }
+
+    /* 点击：橘瓣花式爆开 */
+    .orange-burst-ring {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--theme-color);
+      transform: translate(-50%, -50%);
+      animation: burstExpand 0.7s ease-out forwards;
+    }
+    @keyframes burstExpand {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(3.5); }
+    }
+
+    /* ======== 顶部返回栏 ======== */
+    .top-bar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      padding: 20px 5vw;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: linear-gradient(to bottom, rgba(5,5,9,0.85), transparent);
+      backdrop-filter: blur(8px);
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 22px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px;
+      letter-spacing: 2px;
+      font-size: 13px;
+      transition: 0.3s;
+      background: rgba(255,255,255,0.05);
+    }
+    .back-link:hover {
+      transform: translateX(-4px);
+      background: var(--theme-glow-soft);
+      border-color: var(--theme-color);
+    }
+    .top-name {
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: rgba(248,247,255,0.7);
+    }
+
+    /* ======== 主体布局 ======== */
+    .profile-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 42% 58%;
+      gap: 60px;
+      align-items: center;
+      padding: 100px 8vw 60px;
+      position: relative;
+    }
+
+    /* ======== 照片（带 3D 倾斜） ======== */
+    .photo-wrap {
+      perspective: 1200px;
+      height: 78vh;
+      min-height: 540px;
+      position: relative;
+      opacity: 0;
+      transform: translateX(-60px);
+      animation: slideInLeft 1.2s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes slideInLeft {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .photo {
+      width: 100%;
+      height: 100%;
+      border-radius: 32px;
+      background:
+        linear-gradient(to top, rgba(0,0,0,0.55), transparent 50%),
+        url("images/zhangji1.jpg") center top / cover no-repeat;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.55), 0 0 60px var(--theme-glow-soft);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transform-style: preserve-3d;
+    }
+    .photo-wrap:hover .photo {
+      box-shadow: 0 40px 110px rgba(0,0,0,0.65), 0 0 80px var(--theme-glow);
+    }
+
+    /* 照片角标：成员编号 */
+    .photo-badge {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      padding: 8px 16px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--theme-color);
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--theme-color);
+      z-index: 2;
+    }
+
+    /* ======== 右侧信息区 ======== */
+    .info {
+      max-width: 680px;
+      position: relative;
+    }
+    .info > * {
+      opacity: 0;
+      transform: translateX(40px);
+      animation: slideInRight 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .info > *:nth-child(1) { animation-delay: 0.5s; }
+    .info > *:nth-child(2) { animation-delay: 0.65s; }
+    .info > *:nth-child(3) { animation-delay: 0.8s; }
+    .info > *:nth-child(4) { animation-delay: 0.95s; }
+    .info > *:nth-child(5) { animation-delay: 1.1s; }
+    .info > *:nth-child(6) { animation-delay: 1.25s; }
+    @keyframes slideInRight {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .eyebrow {
+      color: var(--theme-color);
+      letter-spacing: 6px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: inline-block;
+      padding: 6px 14px;
+      border: 1px solid var(--theme-color);
+      border-radius: 999px;
+      background: var(--theme-glow-soft);
+    }
+
+    .info h1 {
+      font-size: clamp(58px, 8vw, 118px);
+      margin: 12px 0 8px;
+      letter-spacing: 6px;
+      text-shadow: 0 0 35px rgba(255,255,255,0.22), 0 0 60px var(--theme-glow-soft);
+      line-height: 1;
+    }
+
+    .name-en {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22px;
+      letter-spacing: 8px;
+      color: rgba(248,247,255,0.55);
+      margin-bottom: 20px;
+    }
+
+    .tag {
+      font-size: 24px;
+      color: #ffffff;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    /* ======== 数据条 ======== */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 30px;
+    }
+    .stat-item {
+      padding: 18px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      transition: 0.3s;
+    }
+    .stat-item:hover {
+      transform: translateY(-4px);
+      border-color: var(--theme-color);
+      background: var(--theme-glow-soft);
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--theme-color);
+      letter-spacing: 1px;
+      text-shadow: 0 0 20px var(--theme-glow);
+    }
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: rgba(248,247,255,0.6);
+      margin-top: 4px;
+    }
+
+    /* ======== 信息卡（标签徽章） ======== */
+    .info-card {
+      padding: 26px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+      margin-bottom: 28px;
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key {
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--theme-color);
+      min-width: 80px;
+    }
+    .info-val {
+      flex: 1;
+      color: rgba(248,247,255,0.88);
+      font-size: 15px;
+    }
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .keyword {
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--theme-glow-soft);
+      border: 1px solid var(--theme-color);
+      font-size: 12px;
+      color: var(--theme-color);
+      letter-spacing: 1px;
+    }
+
+    /* ======== 应援留言区 ======== */
+    .signal-section {
+      padding: 80px 8vw;
+      position: relative;
+    }
+    .signal-title {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(32px, 5vw, 56px);
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .signal-subtitle {
+      text-align: center;
+      color: rgba(248,247,255,0.6);
+      font-size: 14px;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
+
+    .signal-input-row {
+      display: flex;
+      gap: 12px;
+      max-width: 720px;
+      margin: 0 auto 40px;
+    }
+    .signal-input {
+      flex: 1;
+      padding: 16px 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      outline: none;
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+    .signal-input:focus {
+      border-color: var(--theme-color);
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 0 25px var(--theme-glow-soft);
+    }
+    .signal-send {
+      padding: 16px 30px;
+      border-radius: 999px;
+      border: 1px solid var(--theme-color);
+      background: var(--theme-glow-soft);
+      color: var(--theme-color);
+      letter-spacing: 3px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .signal-send:hover {
+      background: var(--theme-color);
+      color: #050509;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px var(--theme-glow);
+    }
+
+    .signal-wall {
+      max-width: 880px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .signal-bubble {
+      padding: 16px 20px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      animation: bubbleIn 0.5s ease forwards;
+    }
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .signal-bubble .from {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--theme-color);
+      margin-bottom: 8px;
+    }
+    .signal-bubble .text {
+      color: rgba(248,247,255,0.88);
+      line-height: 1.6;
+      font-size: 14px;
+      word-break: break-word;
+    }
+    .signal-empty {
+      text-align: center;
+      color: rgba(248,247,255,0.4);
+      font-size: 14px;
+      grid-column: 1 / -1;
+      padding: 40px 0;
+    }
+
+    /* ======== 烟花容器 ======== */
+    .firework-particle {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform, opacity;
+    }
+    @keyframes fireworkFly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--fx), var(--fy)) scale(0); }
+    }
+
+    /* ======== 响应式 ======== */
+    @media (max-width: 900px) {
+      .profile-page {
+        grid-template-columns: 1fr;
+        padding: 100px 6vw 40px;
+      }
+      .photo-wrap {
+        height: 65vh;
+        min-height: 430px;
+      }
+      .info h1 { font-size: 58px; }
+      .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat-value { font-size: 22px; }
+      body { cursor: auto; }
+      .butterfly-cursor, .angel-cursor, .orange-cursor { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景层 -->
+  <div class="bg-stars"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="meteor"></div>
+  <div class="meteor"></div>
+  <div class="meteor"></div>
+  <div class="orange-cursor" id="orangeCursor">
+    <span class="orange-petal"></span>
+    <span class="orange-petal"></span>
+    <span class="orange-petal"></span>
+    <span class="orange-petal"></span>
+  </div>
+
+  <!-- 顶部返回栏 -->
+  <div class="top-bar">
+    <a class="back-link" href="index.html">‹ BACK TO HOME</a>
+    <span class="top-name">MEMBER · 张极</span>
+  </div>
+
+  <!-- 主体 -->
+  <main class="profile-page">
+    <div class="photo-wrap" id="photoWrap">
+      <div class="photo-badge">MEMBER 03</div>
+      <div class="photo" id="photo"></div>
+    </div>
+
+    <div class="info">
+      <span class="eyebrow">MEMBER PROFILE</span>
+      <h1>张极</h1>
+      <div class="name-en">ZHANG JI</div>
+      <p class="tag">让舞台成为青春的坐标。</p>
+
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-value" id="daysToBirthday">--</div>
+          <div class="stat-label">DAYS TO 🎂</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="cheerCount">0</div>
+          <div class="stat-label">应援次数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">2007</div>
+          <div class="stat-label">SINCE</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-key">生日</span>
+          <span class="info-val">2007.02.03</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">应援色</span>
+          <span class="info-val keywords">
+            <span class="keyword">温暖橘 🍊</span>
+            <span class="keyword">小橘子</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">关键词</span>
+          <span class="info-val keywords">
+            <span class="keyword">舞台</span>
+            <span class="keyword">热血</span>
+            <span class="keyword">少年感</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">介绍</span>
+          <span class="info-val">把每一次舞台都当成青春的坐标，眼里有光，脚下有节拍。是会让全场点亮橘色海洋的那束光。</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 应援留言区 -->
+  <section class="signal-section">
+    <h2 class="signal-title">FAN SIGNAL</h2>
+    <p class="signal-subtitle">小橘子们 · 把心里话留给他 🍊</p>
+
+    <div class="signal-input-row">
+      <input type="text" class="signal-input" id="signalInput" placeholder="留下你的应援话语..." maxlength="80">
+      <button class="signal-send" id="signalSend">SEND ✦</button>
+    </div>
+
+    <div class="signal-wall" id="signalWall"></div>
+  </section>
+
+  <script>
+    // ============ 配置：每个成员页只改这里 ============
+    const MEMBER = {
+      key: 'zhangji',
+      name: '张极',
+      birthday: { month: 2, day: 3 },
+      themeColor: '#ff9b3d'
+    };
+
+    // ============ 小橘子光标 ============
+    const orange = document.getElementById('orangeCursor');
+    let lastTrailTime = 0;
+    const TRAIL_INTERVAL = 70;
+
+    document.addEventListener('mousemove', (e) => {
+      orange.style.left = e.clientX + 'px';
+      orange.style.top = e.clientY + 'px';
+
+      const now = performance.now();
+      if (now - lastTrailTime > TRAIL_INTERVAL) {
+        lastTrailTime = now;
+        spawnTrail(e.clientX, e.clientY);
+      }
+    });
+
+    function spawnTrail(x, y) {
+      const trail = document.createElement('div');
+      // 75% 是小气泡，25% 是小橘瓣
+      const isBubble = Math.random() > 0.25;
+      trail.className = 'orange-trail ' + (isBubble ? 'bubble' : 'tiny-petal');
+      trail.style.left = (x + (Math.random() * 18 - 9)) + 'px';
+      trail.style.top = (y + (Math.random() * 18 - 9)) + 'px';
+      trail.style.setProperty('--drift-x', (Math.random() * 30 - 15) + 'px');
+      trail.style.setProperty('--drift-y', (Math.random() * 30 + 8) + 'px');
+      trail.style.setProperty('--drift-r', (Math.random() * 80 - 40) + 'deg');
+      document.body.appendChild(trail);
+      setTimeout(() => trail.remove(), 1300);
+    }
+
+    // hover 链接：橘瓣绽放
+    document.addEventListener('mouseover', (e) => {
+      if (e.target.closest('a, button, input, .stat-item, .photo-wrap')) {
+        orange.classList.add('hovering');
+      }
+    });
+    document.addEventListener('mouseout', (e) => {
+      if (!e.relatedTarget || !e.relatedTarget.closest('a, button, input, .stat-item, .photo-wrap')) {
+        orange.classList.remove('hovering');
+      }
+    });
+
+    // 点击：圆环冲击 + 6 片橘瓣花式爆开
+    document.addEventListener('click', (e) => {
+      // 冲击波光环
+      const ring = document.createElement('div');
+      ring.className = 'orange-burst-ring';
+      ring.style.left = e.clientX + 'px';
+      ring.style.top = e.clientY + 'px';
+      document.body.appendChild(ring);
+      setTimeout(() => ring.remove(), 700);
+
+      // 6 片橘瓣呈花瓣状散开
+      for (let i = 0; i < 6; i++) {
+        const petal = document.createElement('div');
+        petal.className = 'orange-trail tiny-petal';
+        petal.style.left = e.clientX + 'px';
+        petal.style.top = e.clientY + 'px';
+        const angle = (Math.PI * 2 * i) / 6;
+        const dist = 50 + Math.random() * 30;
+        petal.style.setProperty('--drift-x', Math.cos(angle) * dist + 'px');
+        petal.style.setProperty('--drift-y', Math.sin(angle) * dist + 'px');
+        petal.style.setProperty('--drift-r', (angle * 180 / Math.PI + 90) + 'deg');
+        document.body.appendChild(petal);
+        setTimeout(() => petal.remove(), 1300);
+      }
+    });
+
+    // ============ 照片 3D 视差倾斜 ============
+    const photoWrap = document.getElementById('photoWrap');
+    const photo = document.getElementById('photo');
+    photoWrap.addEventListener('mousemove', (e) => {
+      const rect = photoWrap.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      photo.style.transform = `rotateY(${x * 8}deg) rotateX(${-y * 8}deg) scale(1.02)`;
+    });
+    photoWrap.addEventListener('mouseleave', () => {
+      photo.style.transform = 'rotateY(0) rotateX(0) scale(1)';
+    });
+
+    // ============ 生日倒计时 ============
+    function updateBirthdayCountdown() {
+      const now = new Date();
+      const year = now.getFullYear();
+      let bday = new Date(year, MEMBER.birthday.month - 1, MEMBER.birthday.day);
+      if (bday < now) {
+        bday = new Date(year + 1, MEMBER.birthday.month - 1, MEMBER.birthday.day);
+      }
+      const diffDays = Math.ceil((bday - now) / (1000 * 60 * 60 * 24));
+      document.getElementById('daysToBirthday').textContent = diffDays;
+    }
+    updateBirthdayCountdown();
+
+    // ============ 应援计数（localStorage） ============
+    const cheerKey = `cheer_${MEMBER.key}`;
+    const cheerCountEl = document.getElementById('cheerCount');
+
+    function getCheerCount() {
+      return parseInt(localStorage.getItem(cheerKey) || '0');
+    }
+    function setCheerCount(n) {
+      localStorage.setItem(cheerKey, String(n));
+      cheerCountEl.textContent = n;
+    }
+    setCheerCount(getCheerCount());
+
+    // 数字滚动动画
+    function animateCheerCount(from, to) {
+      const duration = 600;
+      const start = performance.now();
+      function step(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        cheerCountEl.textContent = Math.round(from + (to - from) * eased);
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ============ 烟花爆炸 ============
+    function spawnFirework(x, y) {
+      const colors = [MEMBER.themeColor, '#ffffff', '#c7b8ff'];
+      for (let i = 0; i < 24; i++) {
+        const p = document.createElement('div');
+        p.className = 'firework-particle';
+        const angle = (Math.PI * 2 * i) / 24;
+        const distance = 80 + Math.random() * 80;
+        const fx = Math.cos(angle) * distance;
+        const fy = Math.sin(angle) * distance;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = color;
+        p.style.boxShadow = `0 0 12px ${color}`;
+        p.style.setProperty('--fx', fx + 'px');
+        p.style.setProperty('--fy', fy + 'px');
+        p.style.animation = `fireworkFly ${0.8 + Math.random() * 0.4}s ease-out forwards`;
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1300);
+      }
+    }
+
+    // ============ 应援留言（localStorage） ============
+    const wallKey = `wall_${MEMBER.key}`;
+    const wallEl = document.getElementById('signalWall');
+    const inputEl = document.getElementById('signalInput');
+    const sendBtn = document.getElementById('signalSend');
+
+    function getMessages() {
+      try {
+        return JSON.parse(localStorage.getItem(wallKey) || '[]');
+      } catch (e) { return []; }
+    }
+    function saveMessages(arr) {
+      localStorage.setItem(wallKey, JSON.stringify(arr));
+    }
+
+    function renderWall() {
+      const messages = getMessages();
+      if (!messages.length) {
+        wallEl.innerHTML = '<div class="signal-empty">小橘子们还没有留言，做第一个吧 🍊</div>';
+        return;
+      }
+      wallEl.innerHTML = messages.slice().reverse().map(m => `
+        <div class="signal-bubble">
+          <div class="from">FAN · ${m.time}</div>
+          <div class="text">${escapeHtml(m.text)}</div>
+        </div>
+      `).join('');
+    }
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      const messages = getMessages();
+      const now = new Date();
+      const time = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      messages.push({ text, time });
+      // 只保留最近 50 条
+      if (messages.length > 50) messages.shift();
+      saveMessages(messages);
+      inputEl.value = '';
+      renderWall();
+
+      // 发送时：应援数 +1 + 烟花
+      const oldCount = getCheerCount();
+      const newCount = oldCount + 1;
+      setCheerCount(newCount);
+      animateCheerCount(oldCount, newCount);
+
+      // 在按钮位置爆烟花
+      const rect = sendBtn.getBoundingClientRect();
+      spawnFirework(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    renderWall();
+
+    // ============ 滚动到底部触发烟花（彩蛋） ============
+    let firedBottom = false;
+    window.addEventListener('scroll', () => {
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const docHeight = document.body.offsetHeight;
+      if (!firedBottom && scrollBottom >= docHeight - 50) {
+        firedBottom = true;
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight - 100;
+        spawnFirework(cx, cy);
+        setTimeout(() => spawnFirework(cx - 150, cy - 50), 200);
+        setTimeout(() => spawnFirework(cx + 150, cy - 50), 400);
+      }
+    });
+  </script>
+</body>
+</html>
